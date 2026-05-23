@@ -1,0 +1,6 @@
+flowchart LR
+  RS[riesgo-service\n/actuator/prometheus] --> PR[Prometheus]
+  NS[notificacion-service\n/actuator/prometheus] --> PR
+  PR --> GF[Grafana dashboards]
+  RS -->|OTLP traces| JG[Jaeger]
+  NS -->|OTLP traces| JG

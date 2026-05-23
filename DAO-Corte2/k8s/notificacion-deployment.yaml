@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notificacion-service
+  labels:
+    app: notificacion-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notificacion-service
+  template:
+    metadata:
+      labels:
+        app: notificacion-service
+    spec:
+      containers:
+      - name: notificacion-service
+        image: notificacion-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        livenessProbe:
+          httpGet:
+            path: /api/notificaciones/health
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/notificaciones/health
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notificacion-service
+spec:
+  selector:
+    app: notificacion-service
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081

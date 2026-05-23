@@ -1,0 +1,8 @@
+flowchart LR
+  C[Cliente: curl/Postman] -->|JWT + REST| R[riesgo-service :8080]
+  R -->|REST HTTP| N[notificacion-service :8081]
+  R --> P[Prometheus :9090]
+  N --> P
+  P --> G[Grafana :3000]
+  R --> J[Jaeger :16686/:4318]
+  N --> J

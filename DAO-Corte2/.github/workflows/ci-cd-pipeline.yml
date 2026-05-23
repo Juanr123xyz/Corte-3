@@ -1,0 +1,81 @@
+name: CI/CD Pipeline DevSecOps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Build and Test Notificacion Service
+      run: |
+        cd notificacion-service
+        mvn clean verify
+        
+    - name: Build and Test Riesgo Service
+      run: |
+        cd riesgo-service
+        mvn clean verify
+
+    - name: Upload Test Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports
+        path: |
+          notificacion-service/target/surefire-reports
+          riesgo-service/target/surefire-reports
+
+  security-sast-dast:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Semgrep SAST
+      run: |
+        pip install semgrep
+        semgrep scan --config auto --json -o semgrep-results.json || true
+    
+    - name: Gitleaks (Secrets Scanning)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'DAO-Corte2'
+        path: '.'
+        format: 'HTML'
+
+  docker-and-k8s:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build Docker images
+      run: |
+        cd notificacion-service && docker build -t notificacion-service:latest .
+        cd ../riesgo-service && docker build -t riesgo-service:latest .
+        
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'riesgo-service:latest'
+        format: 'table'
+        exit-code: '0'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'

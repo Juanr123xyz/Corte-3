@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant U as Cliente
+  participant R as riesgo-service
+  participant N as notificacion-service
+  participant O as Observabilidad
+
+  U->>R: POST /api/auth/login
+  R-->>U: JWT
+
+  U->>R: POST /api/estudiantes/evaluar (Bearer JWT)
+  R->>R: Validar token (JwtFilter/JwtUtil)
+  R->>N: POST /api/notificaciones/enviar
+  N-->>R: 200 OK + mensaje
+  R-->>U: Respuesta evaluacion
+  R->>O: Metricas + traza
+  N->>O: Metricas + traza
+
+  U->>R: GET /api/estudiantes/historial/:nombre (Bearer JWT)
+  R->>N: GET /api/notificaciones/historial/:nombre
+  N-->>R: historial
+  R-->>U: historial consolidado

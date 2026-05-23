@@ -1,0 +1,24 @@
+flowchart TB
+  subgraph RS[Contenedor: riesgo-service]
+    AC[AuthController]
+    EC[EstudianteController]
+    ERS[EvaluadorRiesgoService]
+    NC[NotificacionClient]
+    SEC[SecurityConfig + JwtFilter]
+    JWT[JwtUtil]
+    AC --> JWT
+    EC --> ERS
+    ERS --> NC
+    SEC --> JWT
+  end
+
+  subgraph NS[Contenedor: notificacion-service]
+    NCTRL[NotificacionController]
+    NSVC[NotificacionService]
+    NREP[NotificacionRepository]
+    DB[(H2 archivo local)]
+    NCTRL --> NSVC --> NREP --> DB
+  end
+
+  NC -->|POST /enviar| NCTRL
+  NC -->|GET /historial/:nombre| NCTRL
